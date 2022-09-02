@@ -68,7 +68,7 @@ juju run --machine 0 "
 
 # Launch 3 MicroK8s machines.
 for x in 0 1 2; do
-  CONTAINER="k8s${x}"
+  CONTAINER="k8s-${x}"
 
   # Launch and configure networking
   juju run --machine 0 -- lxc launch -p default -p microk8s "ubuntu:${SERIES}" "${CONTAINER}"
@@ -99,7 +99,7 @@ done
 
 # Form cluster
 join_cmd="$(
-  juju run --machine 0 -- lxc exec k8s0 -- bash -c "microk8s add-node --token-ttl 10000" \
+  juju run --machine 0 -- lxc exec k8s-0 -- bash -c "microk8s add-node --token-ttl 10000" \
     | grep "microk8s join" \
     | head -1
 )"
@@ -108,27 +108,27 @@ juju run --machine 0 -- lxc exec k8s2 -- bash -x -c "${join_cmd} --worker"
 
 # Side-load images
 juju run --machine 0 "
-  lxc file push images.tar k8s0/images.tar
-  lxc shell k8s0 -- bash -c 'microk8s images import /images.tar'
+  lxc file push images.tar k8s-0/images.tar
+  lxc shell k8s-0 -- bash -c 'microk8s images import /images.tar'
 "
 
 # Install addons
-juju run --machine 0 -- lxc exec k8s0 -- bash -x -c "microk8s enable dns ingress hostpath-storage"
+juju run --machine 0 -- lxc exec k8s-0 -- bash -x -c "microk8s enable dns ingress hostpath-storage"
 
 # Wait for addons to become ready
-juju run --machine 0 -- lxc shell k8s0 -- bash -x -c "
+juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "
   while ! microk8s kubectl wait -n kube-system ds/calico-node --for=jsonpath='{.status.numberReady}'=3; do
     echo waiting for calico
     sleep 3
   done
 "
-juju run --machine 0 -- lxc shell k8s0 -- bash -x -c "
+juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "
   while ! microk8s kubectl wait -n kube-system deploy/hostpath-provisioner --for=jsonpath='{.status.readyReplicas}'=1; do
     echo waiting for hostpath provisioner
     sleep 3
   done
 "
-juju run --machine 0 -- lxc shell k8s0 -- bash -x -c "
+juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "
   while ! microk8s kubectl wait -n kube-system deploy/coredns --for=jsonpath='{.status.readyReplicas}'=1; do
     echo waiting for coredns
     sleep 3
