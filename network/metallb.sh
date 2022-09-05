@@ -13,7 +13,9 @@ if [[ "x$JUJU_MODEL" = "x" ]]; then
   juju add-model "${JUJU_MODEL}"
   juju add-machine -m "${JUJU_MODEL}" -n 3 --constraints 'mem=4G cores=4 root-disk=40G'
 
-  trap cleanup EXIT
+  if [[ "x$CLEANUP" != "xno" ]]; then
+    trap cleanup EXIT
+  fi
 fi
 
 export JUJU_MODEL="${JUJU_MODEL}"
@@ -60,6 +62,11 @@ spec:
 EOF
 "
 
+# wait for lb services to get an IP address
+juju run --machine 0 "
+  sudo microk8s kubectl wait svc bot --for=jsonpath='{.status.loadBalancer.ingress[0].ip}=10.64.0.1'
+"
+
 # attempt to reach lb from each node
 for x in 0 1 2; do
   echo "testing connectivity from machine $x"
@@ -71,6 +78,7 @@ for x in 0 1 2; do
     fi
   "; then
     echo "failed to reach lb from machine $x"
+    exit 1
   fi
 done
 
@@ -128,6 +136,12 @@ spec:
 EOF
 "
 
+# wait for lb services to get an IP address
+juju run --machine 0 "
+  sudo microk8s kubectl wait svc bot-pool1 --for=jsonpath='{.status.loadBalancer.ingress[0].ip}=10.100.100.100'
+  sudo microk8s kubectl wait svc bot-pool2 --for=jsonpath='{.status.loadBalancer.ingress[0].ip}=10.10.10.10'
+"
+
 # attempt to reach lb from each node
 for x in 0 1 2; do
   echo "testing connectivity from machine $x"
@@ -140,8 +154,6 @@ for x in 0 1 2; do
     done
   "; then
     echo "failed to reach some services from machine $x"
+    exit 1
   fi
 done
-
-# delete old lbs
-juju run --machine 0 "sudo microk8s kubectl delete svc bot-pool1 bot-pool2"

@@ -13,7 +13,9 @@ if [[ "x$JUJU_MODEL" = "x" ]]; then
   juju add-model "${JUJU_MODEL}"
   juju add-machine -m "${JUJU_MODEL}" -n 3 --constraints 'mem=4G cores=4 root-disk=40G'
 
-  trap cleanup EXIT
+  if [[ "x$CLEANUP" != "xno" ]]; then
+    trap cleanup EXIT
+  fi
 fi
 
 export JUJU_MODEL="${JUJU_MODEL}"

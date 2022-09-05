@@ -13,7 +13,9 @@ if [[ "x$JUJU_MODEL" = "x" ]]; then
   juju add-model "${JUJU_MODEL}"
   juju add-machine -m "${JUJU_MODEL}" --constraints 'instance-type=Standard_NC6s_v2'
 
-  trap cleanup EXIT
+  if [[ "x$CLEANUP" != "xno" ]]; then
+    trap cleanup EXIT
+  fi
 fi
 
 export JUJU_MODEL="${JUJU_MODEL}"

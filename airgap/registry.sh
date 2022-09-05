@@ -18,7 +18,11 @@ cleanup() {
 if [[ "x$JUJU_MODEL" = "x" ]]; then
   JUJU_MODEL="${JUJU_MODEL:-microk8s-airgap-registry-$ID}"
   juju add-model "${JUJU_MODEL}"
-  trap cleanup EXIT
+
+  if [[ "x$CLEANUP" != "xno" ]]; then
+    trap cleanup EXIT
+  fi
+
   juju add-machine -m "${JUJU_MODEL}" --constraints 'mem=8G root-disk=40G'
 fi
 
