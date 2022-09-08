@@ -106,8 +106,8 @@ join_cmd="$(
     | grep "microk8s join" \
     | head -1
 )"
-juju run --machine 0 -- lxc exec k8s1 -- bash -x -c "${join_cmd}"
-juju run --machine 0 -- lxc exec k8s2 -- bash -x -c "${join_cmd} --worker"
+juju run --machine 0 -- lxc exec k8s-1 -- bash -x -c "${join_cmd}"
+juju run --machine 0 -- lxc exec k8s-2 -- bash -x -c "${join_cmd} --worker"
 
 # Side-load images
 juju run --machine 0 "
@@ -119,21 +119,15 @@ juju run --machine 0 "
 juju run --machine 0 -- lxc exec k8s-0 -- bash -x -c "microk8s enable dns ingress hostpath-storage"
 
 # Wait for addons to become ready
-juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "
-  while ! microk8s kubectl wait -n kube-system ds/calico-node --for=jsonpath='{.status.numberReady}'=3; do
-    echo waiting for calico
-    sleep 3
-  done
-"
-juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "
-  while ! microk8s kubectl wait -n kube-system deploy/hostpath-provisioner --for=jsonpath='{.status.readyReplicas}'=1; do
-    echo waiting for hostpath provisioner
-    sleep 3
-  done
-"
-juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "
-  while ! microk8s kubectl wait -n kube-system deploy/coredns --for=jsonpath='{.status.readyReplicas}'=1; do
-    echo waiting for coredns
-    sleep 3
-  done
-"
+while ! juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "microk8s kubectl wait -n kube-system ds/calico-node --for=jsonpath='{.status.numberReady}'=3"; do
+  echo waiting for calico
+  sleep 3
+done
+while ! juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "microk8s kubectl wait -n kube-system deploy/hostpath-provisioner --for=jsonpath='{.status.readyReplicas}'=1"; do
+  echo waiting for hostpath-provisioner
+  sleep 3
+done
+while ! juju run --machine 0 -- lxc shell k8s-0 -- bash -x -c "microk8s kubectl wait -n kube-system deploy/coredns --for=jsonpath='{.status.readyReplicas}'=1"; do
+  echo waiting for coredns
+  sleep 3
+done
