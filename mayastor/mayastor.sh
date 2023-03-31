@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 export ID=${BUILD_NUMBER:-$$}
-export CHANNEL="1.24"
+export CHANNEL="1.26"
 
 cleanup() {
   juju destroy-model "${JUJU_MODEL}" --force --yes
