@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 export ID=${BUILD_NUMBER:-$$}
-export CHANNEL="1.28/candidate"
+export CHANNEL="1.27"
 
 cleanup() {
   juju destroy-model "${JUJU_MODEL}" --force --yes
@@ -39,7 +39,13 @@ juju run --machine 1 "sudo ${JOIN_CMD}"
 juju run --machine 2 "sudo ${JOIN_CMD}"
 
 # enable mayastor
-juju run --machine 0 "sudo microk8s enable mayastor"
+juju run --machine 0 "
+# remove after merging rbac fix
+sudo microk8s addons repo add core --force --reference MK-1344/mayastor-rbac https://github.com/canonical/microk8s-core-addons
+
+sudo microk8s enable rbac
+sudo microk8s enable mayastor
+"
 
 # wait mayastor to come up
 while ! juju run --machine 0 "sudo microk8s.kubectl wait -n mayastor ds/mayastor-io-engine --for=jsonpath='{.status.numberReady}'=3"
