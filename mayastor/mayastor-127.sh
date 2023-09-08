@@ -28,6 +28,15 @@ sudo modprobe nvme-tcp
 sudo sysctl vm.nr_hugepages=1024
 '
 
+# HugePages
+juju run --all -- '
+while ! sysctl vm.nr_hugepages | grep 1024; do
+  sudo sysctl vm.nr_hugepages=1024
+  echo waiting for 1024 hugepages to be available
+  sleep 1
+done
+'
+
 # Install MicroK8s
 juju run --all "
 sudo snap install microk8s --classic --channel $CHANNEL
@@ -40,8 +49,6 @@ juju run --machine 2 "sudo ${JOIN_CMD}"
 
 # enable mayastor
 juju run --machine 0 "
-# remove after merging rbac fix
-sudo microk8s addons repo add core --force --reference MK-1344/mayastor-rbac https://github.com/canonical/microk8s-core-addons
 
 sudo microk8s enable rbac
 sudo microk8s enable mayastor

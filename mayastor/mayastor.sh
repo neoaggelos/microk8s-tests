@@ -28,6 +28,15 @@ sudo modprobe nvme-tcp
 sudo sysctl vm.nr_hugepages=1024
 '
 
+# HugePages
+juju run --all -- '
+while ! sysctl vm.nr_hugepages | grep 1024; do
+  sudo sysctl vm.nr_hugepages=1024
+  echo waiting for 1024 hugepages to be available
+  sleep 1
+done
+'
+
 # Install MicroK8s
 juju run --all "
 sudo snap install microk8s --classic --channel $CHANNEL
